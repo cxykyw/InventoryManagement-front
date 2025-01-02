@@ -1,4 +1,4 @@
-`<template>
+<template>
   <div class="payment">
     <el-card class="box-card">
       <!-- 顶部操作栏 -->
@@ -27,7 +27,7 @@
             <el-input v-model="searchForm.supplierName" placeholder="请输入供应商名称" />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择状态">
+            <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
               <el-option label="全部" value="" />
               <el-option label="待审核" value="待审核" />
               <el-option label="已审核" value="已审核" />
@@ -94,16 +94,32 @@
       </el-table>
 
       <!-- 分页器 -->
-      <div class="pagination">
+      <div class="pagination-container">
+        <div class="pagination-info">
+          共 {{ total }} 条
+        </div>
+        <div class="pagination-select">
+          <el-select v-model="pageSize" style="width: 100px" @change="handleSizeChange">
+            <el-option
+              v-for="size in [10, 20, 50, 100]"
+              :key="size"
+              :label="`${size}条/页`"
+              :value="size"
+            />
+          </el-select>
+        </div>
         <el-pagination
           v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-size="pageSize"
           :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
+          :pager-count="7"
+          layout="prev, pager, next, jumper"
           @current-change="handleCurrentChange"
+          background
         />
+        <div class="pagination-goto">
+          前往 <el-input v-model="currentPage" style="width: 50px" /> 页
+        </div>
       </div>
     </el-card>
 
@@ -177,6 +193,16 @@
             placeholder="请输入备注信息"
           />
         </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select
+            v-model="form.status"
+            placeholder="请选择状态"
+            style="width: 100%"
+          >
+            <el-option label="待审核" value="待审核" />
+            <el-option label="已审核" value="已审核" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -218,17 +244,19 @@ const dialogTitle = computed(() => dialogType.value === 'add' ? '新增付款单
 // 表单数据
 const formRef = ref(null)
 const form = reactive({
+  documentNo: '',
   date: '',
   supplier: '',
   amount: 0,
   paymentMethod: '',
   bankAccount: '',
+  status: '待审核',
   remark: ''
 })
 
 // 表单验证规则
 const rules = {
-  date: [{ required: true, message: '请选择单据日期', trigger: 'change' }],
+  date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   supplier: [{ required: true, message: '请选择供应商', trigger: 'change' }],
   amount: [{ required: true, message: '请输入付款金额', trigger: 'blur' }],
   paymentMethod: [{ required: true, message: '请选择付款方式', trigger: 'change' }],
@@ -270,11 +298,13 @@ const handleSelectionChange = (rows) => {
 // 新增
 const handleAdd = () => {
   dialogType.value = 'add'
+  form.documentNo = ''
   form.date = new Date()
   form.supplier = ''
   form.amount = 0
   form.paymentMethod = ''
   form.bankAccount = ''
+  form.status = '待审核'
   form.remark = ''
   dialogVisible.value = true
 }
@@ -388,18 +418,56 @@ loadData()
 
 .search-area {
   margin-bottom: 20px;
-  padding: 20px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
 }
 
-.pagination {
+.pagination-container {
   margin-top: 20px;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.pagination-info {
+  margin-right: 16px;
+}
+
+.pagination-select {
+  margin-right: 16px;
+}
+
+:deep(.el-pagination) {
+  margin-right: 16px;
+}
+
+.pagination-goto {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-goto .el-input {
+  margin: 0 8px;
+}
+
+:deep(.el-pagination .el-pager li) {
+  margin: 0 4px;
+  min-width: 32px;
+  border-radius: 2px;
+}
+
+:deep(.el-pagination .el-pager li.active) {
+  background-color: #409eff;
+  color: #fff;
+}
+
+:deep(.el-select-dropdown__item) {
+  padding: 0 16px;
 }
 
 .dialog-footer {
   width: 100%;
   text-align: right;
 }
-</style>`
+</style>

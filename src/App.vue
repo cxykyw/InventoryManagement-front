@@ -1,68 +1,72 @@
 <template>
-  <el-container class="layout-container">
-    <el-aside width="200px">
-      <el-menu
-        :router="true"
-        :default-active="activeMenu"
-        class="el-menu-vertical"
-      >
-        <el-menu-item index="/stock-in">
-          <el-icon><Goods /></el-icon>
-          <span>入库管理</span>
-        </el-menu-item>
-        <el-menu-item index="/stock-out">
-          <el-icon><SoldOut /></el-icon>
-          <span>出库管理</span>
-        </el-menu-item>
-        <el-menu-item index="/sales-detail">
-          <el-icon><DataLine /></el-icon>
-          <span>销售明细表</span>
-        </el-menu-item>
-        <el-menu-item index="/receipt">
-          <el-icon><Money /></el-icon>
-          <span>收款单</span>
-        </el-menu-item>
-        <el-menu-item index="/payment">
-          <el-icon><Wallet /></el-icon>
-          <span>付款单</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
-    <el-container>
-      <el-header height="60px">
-        <div class="header-content">
-          <h2>仓库管理系统</h2>
-          <div class="user-info">
-            <el-dropdown>
-              <span class="el-dropdown-link">
-                管理员 <el-icon><ArrowDown /></el-icon>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item>个人信息</el-dropdown-item>
-                  <el-dropdown-item>修改密码</el-dropdown-item>
-                  <el-dropdown-item divided>退出登录</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+  <el-config-provider :locale="zhCn">
+    <el-container class="layout-container">
+      <el-aside width="200px">
+        <el-menu
+          :router="true"
+          :default-active="activeMenu"
+          class="el-menu-vertical"
+        >
+          <el-menu-item index="/stock-in">
+            <el-icon><Goods /></el-icon>
+            <span>入库管理</span>
+          </el-menu-item>
+          <el-menu-item index="/stock-out">
+            <el-icon><SoldOut /></el-icon>
+            <span>出库管理</span>
+          </el-menu-item>
+          <el-menu-item index="/sales-detail">
+            <el-icon><DataLine /></el-icon>
+            <span>销售明细表</span>
+          </el-menu-item>
+          <el-menu-item index="/receipt">
+            <el-icon><Money /></el-icon>
+            <span>收款单</span>
+          </el-menu-item>
+          <el-menu-item index="/payment">
+            <el-icon><Wallet /></el-icon>
+            <span>付款单</span>
+          </el-menu-item>
+        </el-menu>
+      </el-aside>
+      <el-container>
+        <el-header height="60px">
+          <div class="header-content">
+            <h2>仓库管理系统</h2>
+            <div class="user-info">
+              <el-dropdown>
+                <span class="el-dropdown-link">
+                  管理员 <el-icon><ArrowDown /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item>个人信息</el-dropdown-item>
+                    <el-dropdown-item>修改密码</el-dropdown-item>
+                    <el-dropdown-item divided>退出登录</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </div>
-        </div>
-      </el-header>
-      <el-main>
-        <router-view v-slot="{ Component }">
-          <transition name="fade-transform" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </el-main>
+        </el-header>
+        <el-main>
+          <router-view v-slot="{ Component }">
+            <transition name="fade-transform" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </el-main>
+      </el-container>
     </el-container>
-  </el-container>
+  </el-config-provider>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Document, Goods, ArrowDown, SoldOut, DataLine, Money, Wallet } from '@element-plus/icons-vue'
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)

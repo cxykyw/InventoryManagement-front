@@ -25,9 +25,13 @@
             <el-date-picker
               v-model="searchForm.dateRange"
               type="daterange"
+              unlink-panels
               range-separator="至"
               start-placeholder="开始日期"
               end-placeholder="结束日期"
+              :shortcuts="dateShortcuts"
+              value-format="YYYY-MM-DD"
+              :disabled-date="disabledDate"
             />
           </el-form-item>
           <el-form-item>
@@ -46,7 +50,11 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="documentNo" label="单据编号" width="180" />
+        <el-table-column prop="documentNo" label="单据编号" width="180">
+          <template #default="scope">
+            <el-link type="primary" @click="handleView(scope.row)">{{ scope.row.documentNo }}</el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="type" label="入库类型" width="120" />
         <el-table-column prop="date" label="入库日期" width="180" />
         <el-table-column prop="warehouse" label="仓库" width="120" />
@@ -83,7 +91,7 @@
       </el-table>
 
       <!-- 分页器 -->
-      <div class="pagination">
+      <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -214,6 +222,66 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 查看详情对话框 -->
+    <el-dialog
+      title="入库单详情"
+      v-model="viewDialogVisible"
+      width="80%"
+      :close-on-click-modal="true"
+      destroy-on-close
+    >
+      <div class="detail-view">
+        <el-descriptions :column="3" border>
+          <el-descriptions-item label="单据编号">{{ viewData.documentNo }}</el-descriptions-item>
+          <el-descriptions-item label="入库类型">
+            <el-tag :type="getTypeTagType(viewData.type)" effect="dark">{{ viewData.type }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="入库日期">{{ formatDate(viewData.date) }}</el-descriptions-item>
+          <el-descriptions-item label="仓库">{{ viewData.warehouse }}</el-descriptions-item>
+          <el-descriptions-item label="供应商">{{ viewData.supplier }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="viewData.status === '已审核' ? 'success' : 'warning'">
+              {{ viewData.status }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="创建人">{{ viewData.creator }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(viewData.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="备注">{{ viewData.remark || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <div class="detail-items">
+          <h3>入库明细</h3>
+          <el-table :data="viewData.items" border stripe>
+            <el-table-column type="index" label="序号" width="55" />
+            <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="quantity" label="数量" width="120" />
+            <el-table-column prop="price" label="单价" width="120">
+              <template #default="scope">
+                ¥{{ formatNumber(scope.row.price) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="amount" label="金额" width="120">
+              <template #default="scope">
+                ¥{{ formatNumber(scope.row.amount) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
+          </el-table>
+
+          <div class="detail-summary">
+            <span class="summary-item">
+              <label>总数量：</label>
+              <span class="value">{{ calculateTotalQuantity(viewData.items) }}</span>
+            </span>
+            <span class="summary-item">
+              <label>总金额：</label>
+              <span class="amount">¥{{ formatNumber(calculateTotalAmount(viewData.items)) }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -262,14 +330,27 @@ const totalAmount = computed(() => {
 })
 
 // 加载数据
+const loading = ref(false)
 const loadData = async () => {
-  const res = await mockApi.getStockInList({
-    page: currentPage.value,
-    pageSize: pageSize.value,
-    ...searchForm
-  })
-  tableData.value = res.data
-  total.value = res.total
+  loading.value = true
+  try {
+    const res = await mockApi.getStockInListDetail({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      documentNo: searchForm.documentNo,
+      type: searchForm.type === 'purchase' ? '采购入库' : 
+            searchForm.type === 'production' ? '生产入库' : 
+            searchForm.type === 'other' ? '其他入库' : '',
+      dateRange: searchForm.dateRange
+    })
+    tableData.value = res.data
+    total.value = res.total
+  } catch (error) {
+    ElMessage.error('加载数据失败')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
 
 // 搜索
@@ -410,6 +491,68 @@ const handleCurrentChange = (val) => {
   loadData()
 }
 
+// 查看详情相关
+const viewDialogVisible = ref(false)
+const viewData = reactive({
+  documentNo: '',
+  type: '',
+  date: '',
+  warehouse: '',
+  supplier: '',
+  status: '',
+  creator: '',
+  createTime: '',
+  remark: '',
+  items: []
+})
+
+// 处理查看详情
+const handleView = (row) => {
+  Object.assign(viewData, row)
+  viewDialogVisible.value = true
+}
+
+// 获取入库类型标签样式
+const getTypeTagType = (type) => {
+  const map = {
+    '采购入库': 'success',
+    '生产入库': 'warning',
+    '其他入库': 'info'
+  }
+  return map[type] || 'info'
+}
+
+// 格式化日期
+const formatDate = (date) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString()
+}
+
+// 格式化日期时间
+const formatDateTime = (datetime) => {
+  if (!datetime) return '-'
+  return new Date(datetime).toLocaleString()
+}
+
+// 格式化数字
+const formatNumber = (num) => {
+  if (!num && num !== 0) return '0.00'
+  return new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num)
+}
+
+// 计算总数量
+const calculateTotalQuantity = (items) => {
+  return items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+}
+
+// 计算总金额
+const calculateTotalAmount = (items) => {
+  return items.reduce((sum, item) => sum + (item.amount || 0), 0)
+}
+
 // 初始化加载数据
 loadData()
 </script>
@@ -490,10 +633,16 @@ loadData()
   min-height: 32px;
 }
 
-.stock-in .pagination {
+.pagination-container {
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-  padding: 16px 0;
+  padding: 10px 0;
+}
+
+:deep(.el-pagination) {
+  justify-content: flex-end;
+  margin-right: 20px;
 }
 
 .stock-in .el-dialog {
@@ -538,7 +687,7 @@ loadData()
 .stock-in .el-dialog .detail-table .detail-header h3 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: #333;
 }
 
 .stock-in .el-dialog .detail-table .detail-content {
@@ -555,6 +704,47 @@ loadData()
 .stock-in .el-dialog .total-amount {
   font-size: 16px;
   font-weight: bold;
+  color: #f56c6c;
+}
+
+.detail-view {
+  padding: 20px;
+}
+
+.detail-items {
+  margin-top: 20px;
+}
+
+.detail-items h3 {
+  margin-bottom: 15px;
+  font-weight: 500;
+  color: #333;
+}
+
+.detail-summary {
+  margin-top: 15px;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.summary-item {
+  margin-left: 20px;
+  font-size: 14px;
+}
+
+.summary-item label {
+  color: #666;
+}
+
+.summary-item .value {
+  margin-left: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.summary-item .amount {
+  margin-left: 5px;
+  font-weight: 500;
   color: #f56c6c;
 }
 </style>

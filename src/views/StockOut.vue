@@ -41,11 +41,12 @@
             <el-date-picker
               v-model="searchForm.dateRange"
               type="daterange"
+              unlink-panels
               range-separator="至"
               start-placeholder="开始日期"
               end-placeholder="结束日期"
-              value-format="YYYY-MM-DD"
               :shortcuts="dateShortcuts"
+              value-format="YYYY-MM-DD"
               :disabled-date="disabledDate"
             />
           </el-form-item>
@@ -159,7 +160,7 @@
       </el-table>
 
       <!-- 分页器 -->
-      <div class="pagination">
+      <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -168,7 +169,6 @@
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
-          background
         />
       </div>
     </el-card>
@@ -885,10 +885,16 @@ loadData()
   color: #f56c6c;
 }
 
-.pagination {
+.pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  padding: 10px 0;
+}
+
+:deep(.el-pagination) {
+  justify-content: flex-end;
+  margin-right: 20px;
 }
 
 .dialog-form {
