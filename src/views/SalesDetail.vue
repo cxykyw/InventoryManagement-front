@@ -1,10 +1,60 @@
-`<template>
+<template>
   <div class="sales-detail">
     <el-card class="box-card">
-      <!-- 顶部操作栏 -->
-      <div class="operation-bar">
-        <el-button type="primary" @click="handleExport">导出明细</el-button>
-        <el-button type="success" @click="handleAnalysis">数据分析</el-button>
+      <!-- 统计区域 -->
+      <div class="statistics-area">
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-card shadow="hover">
+              <template #header>
+                <div class="card-header">
+                  <span>今日销售额</span>
+                  <el-tag size="small" type="success">实时</el-tag>
+                </div>
+              </template>
+              <div class="statistic-value">¥{{ todaySales.toFixed(2) }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover">
+              <template #header>
+                <div class="card-header">
+                  <span>今日毛利</span>
+                  <el-tag size="small" type="danger">实时</el-tag>
+                </div>
+              </template>
+              <div class="statistic-value profit">¥{{ todayProfit.toFixed(2) }}</div>
+              <div class="statistic-rate">
+                毛利率：<span :class="{ 'positive': todayProfitRate >= 0 }">{{ todayProfitRate.toFixed(2) }}%</span>
+              </div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover">
+              <template #header>
+                <div class="card-header">
+                  <span>本月销售额</span>
+                  <el-tag size="small" type="warning">月度</el-tag>
+                </div>
+              </template>
+              <div class="statistic-value">¥{{ monthSales.toFixed(2) }}</div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover">
+              <template #header>
+                <div class="card-header">
+                  <span>本月毛利</span>
+                  <el-tag size="small" type="warning">月度</el-tag>
+                </div>
+              </template>
+              <div class="statistic-value profit">¥{{ monthProfit.toFixed(2) }}</div>
+              <div class="statistic-rate">
+                毛利率：<span :class="{ 'positive': monthProfitRate >= 0 }">{{ monthProfitRate.toFixed(2) }}%</span>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
       </div>
 
       <!-- 搜索区域 -->
@@ -25,60 +75,22 @@
           <el-form-item label="客户名称">
             <el-input v-model="searchForm.customerName" placeholder="请输入客户名称" />
           </el-form-item>
-          <el-form-item label="销售员">
-            <el-input v-model="searchForm.salespersonName" placeholder="请输入销售员姓名" />
+          <el-form-item label="销售人员">
+            <el-select v-model="searchForm.salesperson" placeholder="请选择销售人员" clearable>
+              <el-option label="张三" value="张三" />
+              <el-option label="李四" value="李四" />
+              <el-option label="王五" value="王五" />
+            </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="resetSearch">重置</el-button>
+            <el-button type="primary" @click="handleSearch">
+              <el-icon><Search /></el-icon>查询
+            </el-button>
+            <el-button @click="resetSearch">
+              <el-icon><Refresh /></el-icon>重置
+            </el-button>
           </el-form-item>
         </el-form>
-      </div>
-
-      <!-- 统计信息 -->
-      <div class="statistics-area">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-card shadow="hover">
-              <template #header>
-                <div class="card-header">
-                  <span>销售总额</span>
-                </div>
-              </template>
-              <div class="statistic-value">¥{{ statistics.totalAmount }}</div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover">
-              <template #header>
-                <div class="card-header">
-                  <span>销售成本</span>
-                </div>
-              </template>
-              <div class="statistic-value">¥{{ statistics.totalCost }}</div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover">
-              <template #header>
-                <div class="card-header">
-                  <span>毛利总额</span>
-                </div>
-              </template>
-              <div class="statistic-value">¥{{ statistics.totalProfit }}</div>
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="hover">
-              <template #header>
-                <div class="card-header">
-                  <span>平均毛利率</span>
-                </div>
-              </template>
-              <div class="statistic-value">{{ statistics.avgProfitRate }}%</div>
-            </el-card>
-          </el-col>
-        </el-row>
       </div>
 
       <!-- 表格区域 -->
@@ -87,40 +99,45 @@
         style="width: 100%"
         border
         stripe
+        v-loading="loading"
       >
         <el-table-column type="index" width="50" label="序号" />
         <el-table-column prop="date" label="日期" width="120" sortable />
-        <el-table-column prop="documentNo" label="单据编号" width="150" />
-        <el-table-column prop="productName" label="商品名称" width="150" />
-        <el-table-column prop="customerName" label="客户名称" width="120" />
-        <el-table-column prop="salespersonName" label="销售员" width="100" />
-        <el-table-column prop="department" label="部门" width="120" />
-        <el-table-column prop="quantity" label="数量" width="100" align="right" sortable />
+        <el-table-column prop="orderNo" label="订单编号" width="150" />
+        <el-table-column prop="productName" label="商品名称" min-width="150" />
+        <el-table-column prop="customerName" label="客户名称" width="150" />
+        <el-table-column prop="salesperson" label="销售人员" width="120" />
+        <el-table-column prop="quantity" label="数量" width="100" align="right" />
         <el-table-column prop="price" label="单价" width="120" align="right">
           <template #default="scope">
-            ¥{{ scope.row.price }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="amount" label="金额" width="120" align="right" sortable>
-          <template #default="scope">
-            ¥{{ scope.row.amount }}
+            <span class="amount-cell">¥{{ scope.row.price.toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="cost" label="成本" width="120" align="right">
           <template #default="scope">
-            ¥{{ scope.row.cost }}
+            <span class="amount-cell">¥{{ scope.row.cost.toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="profit" label="毛利" width="120" align="right" sortable>
+        <el-table-column prop="amount" label="销售金额" width="120" align="right">
           <template #default="scope">
-            ¥{{ scope.row.profit }}
+            <span class="amount-cell">¥{{ scope.row.amount.toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="profitRate" label="毛利率" width="120" align="right" sortable>
+        <el-table-column label="毛利" width="120" align="right">
           <template #default="scope">
-            {{ scope.row.profitRate }}%
+            <span class="amount-cell" :class="{ 'positive': scope.row.profit >= 0, 'negative': scope.row.profit < 0 }">
+              ¥{{ scope.row.profit.toFixed(2) }}
+            </span>
           </template>
         </el-table-column>
+        <el-table-column label="毛利率" width="100" align="right">
+          <template #default="scope">
+            <span class="rate-cell" :class="{ 'positive': scope.row.profitRate >= 0, 'negative': scope.row.profitRate < 0 }">
+              {{ scope.row.profitRate.toFixed(2) }}%
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="150" />
       </el-table>
 
       <!-- 分页器 -->
@@ -129,107 +146,84 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
-          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
       </div>
     </el-card>
-
-    <!-- 数据分析对话框 -->
-    <el-dialog
-      title="销售数据分析"
-      v-model="analysisVisible"
-      width="80%"
-    >
-      <div class="analysis-content">
-        <el-tabs v-model="activeTab">
-          <el-tab-pane label="销售趋势" name="trend">
-            <div class="chart-container">
-              <div ref="trendChart" style="width: 100%; height: 400px;"></div>
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="商品分析" name="product">
-            <div class="chart-container">
-              <div ref="productChart" style="width: 100%; height: 400px;"></div>
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="销售员业绩" name="salesperson">
-            <div class="chart-container">
-              <div ref="salespersonChart" style="width: 100%; height: 400px;"></div>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { mockApi } from '../mock/data'
-import * as echarts from 'echarts'
+import { Search, Refresh } from '@element-plus/icons-vue'
 
-// 搜索表单数据
+// 统计数据
+const todaySales = ref(12345.67)
+const todayProfit = ref(4567.89)
+const todayProfitRate = computed(() => (todayProfit.value / todaySales.value) * 100)
+
+const monthSales = ref(345678.90)
+const monthProfit = ref(98765.43)
+const monthProfitRate = computed(() => (monthProfit.value / monthSales.value) * 100)
+
+// 搜索表单
 const searchForm = reactive({
   dateRange: [],
   productName: '',
   customerName: '',
-  salespersonName: ''
+  salesperson: ''
 })
 
 // 表格数据
-const tableData = ref([])
+const tableData = ref([
+  {
+    date: '2025-01-02',
+    orderNo: 'SO20250102001',
+    productName: '商品A',
+    customerName: '客户1',
+    salesperson: '张三',
+    quantity: 10,
+    price: 100.00,
+    cost: 80.00,
+    amount: 1000.00,
+    profit: 200.00,
+    profitRate: 20.00,
+    remark: '备注信息'
+  },
+  {
+    date: '2025-01-02',
+    orderNo: 'SO20250102002',
+    productName: '商品B',
+    customerName: '客户2',
+    salesperson: '李四',
+    quantity: 5,
+    price: 200.00,
+    cost: 150.00,
+    amount: 1000.00,
+    profit: 250.00,
+    profitRate: 25.00,
+    remark: '备注信息'
+  }
+])
+
+// 分页相关
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(0)
+const total = ref(100)
+const loading = ref(false)
 
-// 统计数据
-const statistics = reactive({
-  totalAmount: '0.00',
-  totalCost: '0.00',
-  totalProfit: '0.00',
-  avgProfitRate: '0.00'
-})
-
-// 数据分析相关
-const analysisVisible = ref(false)
-const activeTab = ref('trend')
-const trendChart = ref(null)
-const productChart = ref(null)
-const salespersonChart = ref(null)
-
-// 加载数据
-const loadData = async () => {
-  const res = await mockApi.getSalesDetails({
-    page: currentPage.value,
-    pageSize: pageSize.value,
-    ...searchForm
-  })
-  
-  tableData.value = res.data
-  total.value = res.total
-  
-  // 计算统计数据
-  if (res.data.length > 0) {
-    const totalAmount = res.data.reduce((sum, item) => sum + parseFloat(item.amount), 0)
-    const totalCost = res.data.reduce((sum, item) => sum + parseFloat(item.cost), 0)
-    const totalProfit = res.data.reduce((sum, item) => sum + parseFloat(item.profit), 0)
-    const avgProfitRate = (totalProfit / totalAmount * 100).toFixed(2)
-    
-    statistics.totalAmount = totalAmount.toFixed(2)
-    statistics.totalCost = totalCost.toFixed(2)
-    statistics.totalProfit = totalProfit.toFixed(2)
-    statistics.avgProfitRate = avgProfitRate
-  }
-}
-
-// 搜索
+// 搜索处理
 const handleSearch = () => {
-  currentPage.value = 1
-  loadData()
+  loading.value = true
+  // TODO: 实现搜索逻辑
+  setTimeout(() => {
+    loading.value = false
+    ElMessage.success('查询成功')
+  }, 500)
 }
 
 // 重置搜索
@@ -237,136 +231,197 @@ const resetSearch = () => {
   searchForm.dateRange = []
   searchForm.productName = ''
   searchForm.customerName = ''
-  searchForm.salespersonName = ''
+  searchForm.salesperson = ''
   handleSearch()
 }
 
-// 导出明细
-const handleExport = () => {
-  ElMessage.success('导出成功')
-}
-
-// 数据分析
-const handleAnalysis = () => {
-  analysisVisible.value = true
-  setTimeout(() => {
-    initCharts()
-  }, 100)
-}
-
-// 初始化图表
-const initCharts = () => {
-  // 销售趋势图
-  const trend = echarts.init(trendChart.value)
-  trend.setOption({
-    title: { text: '销售趋势分析' },
-    tooltip: { trigger: 'axis' },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
-    },
-    yAxis: { type: 'value' },
-    series: [{
-      data: [150, 230, 224, 218, 135, 147],
-      type: 'line'
-    }]
-  })
-
-  // 商品销售分析
-  const product = echarts.init(productChart.value)
-  product.setOption({
-    title: { text: '商品销售分析' },
-    tooltip: { trigger: 'item' },
-    legend: { orient: 'vertical', left: 'left' },
-    series: [{
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 1048, name: '商品A' },
-        { value: 735, name: '商品B' },
-        { value: 580, name: '商品C' }
-      ]
-    }]
-  })
-
-  // 销售员业绩分析
-  const salesperson = echarts.init(salespersonChart.value)
-  salesperson.setOption({
-    title: { text: '销售员业绩分析' },
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['张三', '李四', '王五'] },
-    yAxis: { type: 'value' },
-    series: [{
-      type: 'bar',
-      data: [5000, 4000, 3000]
-    }]
-  })
-}
-
-// 分页
+// 分页处理
 const handleSizeChange = (val) => {
   pageSize.value = val
-  loadData()
+  handleSearch()
 }
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
-  loadData()
+  handleSearch()
 }
-
-// 初始化加载数据
-onMounted(() => {
-  loadData()
-})
 </script>
 
-<style scoped>
+<style>
 .sales-detail {
-  padding: 20px;
-}
+  .box-card {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+    transition: all 0.3s;
 
-.operation-bar {
-  margin-bottom: 20px;
-}
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px 0 rgba(0,0,0,0.15);
+    }
+  }
 
-.search-area {
-  margin-bottom: 20px;
-  padding: 20px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-}
+  .statistics-area {
+    margin-bottom: 20px;
 
-.statistics-area {
-  margin-bottom: 20px;
-}
+    .el-card {
+      border-radius: 8px;
+      transition: all 0.3s;
+      height: 100%;
+      cursor: pointer;
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      }
 
-.statistic-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #409EFF;
-  text-align: center;
-}
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
 
-.pagination {
-  margin-top: 20px;
-  text-align: right;
-}
+        span {
+          font-size: 14px;
+          color: #606266;
+        }
+      }
 
-.chart-container {
-  padding: 20px;
-}
+      .statistic-value {
+        padding: 16px 16px 8px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 600;
+        color: #303133;
+        font-family: 'Roboto Mono', monospace;
 
-:deep(.el-card__header) {
-  padding: 10px 20px;
-}
+        &.profit {
+          color: #67c23a;
+        }
+      }
 
-:deep(.el-card__body) {
-  padding: 20px;
+      .statistic-rate {
+        padding: 0 16px 16px;
+        text-align: center;
+        font-size: 14px;
+        color: #909399;
+
+        span {
+          font-weight: 500;
+          
+          &.positive {
+            color: #67c23a;
+          }
+          
+          &.negative {
+            color: #f56c6c;
+          }
+        }
+      }
+    }
+  }
+
+  .search-area {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+
+    &:hover {
+      background-color: #f0f2f5;
+    }
+
+    .el-form-item {
+      margin-bottom: 16px;
+      margin-right: 20px;
+    }
+
+    .el-input,
+    .el-select,
+    .el-date-editor {
+      width: 220px;
+    }
+
+    .el-button {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      transition: all 0.3s;
+
+      .el-icon {
+        margin-right: 4px;
+      }
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+    }
+  }
+
+  .el-table {
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+
+    th {
+      background-color: #f5f7fa;
+      color: #606266;
+      font-weight: 600;
+      height: 48px;
+    }
+
+    .el-table__row {
+      transition: all 0.3s;
+
+      &:hover {
+        background-color: #f5f7fa;
+      }
+
+      td {
+        padding: 12px 0;
+      }
+    }
+
+    .amount-cell {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 500;
+      
+      &.positive {
+        color: #67c23a;
+      }
+      
+      &.negative {
+        color: #f56c6c;
+      }
+    }
+
+    .rate-cell {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 500;
+      
+      &.positive {
+        color: #67c23a;
+      }
+      
+      &.negative {
+        color: #f56c6c;
+      }
+    }
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 0;
+
+    .el-pagination {
+      padding: 0;
+      margin: 0;
+    }
+  }
 }
-</style>`
+</style>

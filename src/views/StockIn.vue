@@ -220,7 +220,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { mockApi, warehouses, suppliers, products } from '../mock/data'
+import { mockApi } from '@/api/mock'
 
 // 搜索表单数据
 const searchForm = reactive({
@@ -419,30 +419,140 @@ loadData()
   padding: 20px;
 }
 
-.operation-bar {
+.stock-in .box-card {
   margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
 }
 
-.search-area {
+.stock-in .operation-bar {
   margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.stock-in .operation-bar .el-button {
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.stock-in .operation-bar .el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stock-in .search-area {
+  background-color: #f8f9fa;
   padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.stock-in .search-area .el-form-item {
+  margin-bottom: 16px;
+  margin-right: 20px;
+}
+
+.stock-in .search-area .el-input,
+.stock-in .search-area .el-select,
+.stock-in .search-area .el-date-editor {
+  width: 220px;
+}
+
+.stock-in .el-table {
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.stock-in .el-table .el-table__header-wrapper th {
   background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+}
+
+.stock-in .el-table .el-table__row {
+  transition: all 0.3s;
+}
+
+.stock-in .el-table .el-table__row:hover {
+  background-color: #f5f7fa;
+}
+
+.stock-in .el-table .el-tag {
   border-radius: 4px;
+  padding: 4px 8px;
 }
 
-.pagination {
+.stock-in .el-table .el-button {
+  padding: 6px 12px;
+  min-height: 32px;
+}
+
+.stock-in .pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+}
+
+.stock-in .el-dialog {
+  border-radius: 8px;
+}
+
+.stock-in .el-dialog .el-dialog__header {
+  padding: 20px;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stock-in .el-dialog .el-dialog__header .el-dialog__title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.stock-in .el-dialog .el-dialog__body {
+  padding: 24px;
+}
+
+.stock-in .el-dialog .el-dialog__footer {
+  padding: 16px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.stock-in .el-dialog .detail-table {
   margin-top: 20px;
-  text-align: right;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.detail-operations {
+.stock-in .el-dialog .detail-table .detail-header {
+  background-color: #f5f7fa;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stock-in .el-dialog .detail-table .detail-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #303133;
+}
+
+.stock-in .el-dialog .detail-table .detail-content {
+  padding: 16px;
+}
+
+.stock-in .el-dialog .detail-operations {
   margin-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.total-amount {
+.stock-in .el-dialog .total-amount {
   font-size: 16px;
   font-weight: bold;
   color: #f56c6c;
